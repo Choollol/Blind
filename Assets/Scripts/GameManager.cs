@@ -9,13 +9,17 @@ public class GameManager : MonoBehaviour
 {
     public enum GameState
     {
-        MainMenu, InGame, Paused, GameOver
+        MainMenu, Tutorial, DifficultySelect, InGame, Paused, GameOver
+    }
+    public enum Difficulty
+    {
+        Easy, Normal, Hard
     }
 
     private static GameManager instance;
     public static GameManager Instance { get { return instance; } }
 
-    public static bool isGameActive;
+    public static bool isGameActive { get; private set; }
 
     public static int wins { get; private set; }
     public static int losses { get; private set; }
@@ -23,6 +27,11 @@ public class GameManager : MonoBehaviour
     public static bool hasReadInstructions { get; private set; }
 
     private GameState state;
+
+    public static Vector3 hornPos { get; private set; }
+
+    public static bool didWin { get; private set; }
+    public static Difficulty difficulty { get; private set; }
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -45,7 +54,8 @@ public class GameManager : MonoBehaviour
         }
         Load();
         state = GameState.MainMenu;
-        //SceneManager.LoadSceneAsync("Menu");
+        SceneManager.LoadSceneAsync("Menu", LoadSceneMode.Additive);
+        isGameActive = false;
     }
 
     private void Update()
@@ -55,6 +65,16 @@ public class GameManager : MonoBehaviour
             case GameState.MainMenu:
                 {
                     MainMenuUpdate();
+                    break;
+                }
+            case GameState.Tutorial:
+                {
+                    TutorialUpdate();
+                    break;
+                }
+            case GameState.DifficultySelect:
+                {
+                    DifficultySelectUpdate();
                     break;
                 }
             case GameState.InGame:
@@ -80,9 +100,9 @@ public class GameManager : MonoBehaviour
         {
             if (Input.GetButtonDown("1"))
             {
-                StartGame("Menu");
-                state = GameState.InGame;
-                Enemy.canMove = true;
+                SceneManager.UnloadSceneAsync("Menu");
+                SceneManager.LoadSceneAsync("Difficulty_Select", LoadSceneMode.Additive);
+                state = GameState.DifficultySelect;
             }
             else if (Input.GetButtonDown("2"))
             {
@@ -90,10 +110,13 @@ public class GameManager : MonoBehaviour
             }
             else if (Input.GetButtonDown("3"))
             {
-                UIManager.Instance.SwitchUI("Record UI");
-                MainMenuManager.Instance.UpdateRecord();
+                //UIManager.Instance.SwitchUI("Record UI");
+                //MainMenuManager.Instance.UpdateRecord();
+                SceneManager.UnloadSceneAsync("Menu");
+                SceneManager.LoadSceneAsync("Tutorial", LoadSceneMode.Additive);
+                state = GameState.Tutorial;
             }
-            else if (Input.GetButtonDown("Cancel"))
+            else if (Input.GetButtonDown("Cancel") && Application.platform == RuntimePlatform.WindowsPlayer)
             {
                 Application.Quit();
             }
@@ -105,18 +128,61 @@ public class GameManager : MonoBehaviour
             UIManager.Instance.SwitchUI("Main UI");
         }
     }
+    private void TutorialUpdate()
+    {
+        if (Input.GetButtonDown("Cancel"))
+        {
+            ExitToMainMenu("Tutorial");
+        }
+    }
+    private void DifficultySelectUpdate()
+    {
+        if (Input.GetButtonDown("1"))
+        {
+            difficulty = Difficulty.Easy;
+            StartGame("Difficulty_Select");
+        }
+        else if (Input.GetButtonDown("2"))
+        {
+            difficulty = Difficulty.Normal;
+            StartGame("Difficulty_Select");
+        }
+        else if (Input.GetButtonDown("3"))
+        {
+            difficulty = Difficulty.Hard;
+            StartGame("Difficulty_Select");
+        }
+    }
     private void StartGame(string sceneToUnload)
     {
         Time.timeScale = 1;
+        state = GameState.InGame;
         SceneManager.UnloadSceneAsync(sceneToUnload);
         SceneManager.LoadSceneAsync("Game", LoadSceneMode.Additive);
         UAP_AccessibilityManager.StopSpeaking();
         AudioListener.volume = 1;
+        switch (Random.Range(0, 2))
+        {
+            case 0:
+                {
+                    hornPos = new Vector3(-20, hornPos.y, hornPos.z);
+                    break;
+                }
+            case 1:
+                {
+                    hornPos = new Vector3(20, hornPos.y, hornPos.z);
+                    break;
+                }
+        }
         StartCoroutine(BeginBattle());
     }
     private IEnumerator BeginBattle()
     {
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(4);
+        while (AudioManager.GetSound("Battle Start Sound").isPlaying)
+        {
+            yield return null;
+        }
         isGameActive = true;
     }
     private void InGameUpdate()
@@ -132,6 +198,7 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 0;
         state = GameState.Paused;
         AudioManager.StopSound("Cheer Sound");
+        SceneManager.LoadSceneAsync("Paused", LoadSceneMode.Additive);
     }
     private void PausedUpdate()
     {
@@ -141,7 +208,8 @@ public class GameManager : MonoBehaviour
         }
         else if (Input.GetButtonDown("2"))
         {
-            ExitToMainMenu();
+            SceneManager.UnloadSceneAsync("Game");
+            ExitToMainMenu("Paused");
         }
     }
     private void UnpauseGame()
@@ -150,25 +218,27 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1;
         state = GameState.InGame;
         AudioManager.PlaySound("Cheer Sound");
+        SceneManager.UnloadSceneAsync("Paused");
+        UAP_AccessibilityManager.StopSpeaking();
     }
-    private void ExitToMainMenu()
+    public void ExitToMainMenu(string sceneToUnload)
     {
         state = GameState.MainMenu;
-        SceneManager.UnloadSceneAsync("Paused");
-        SceneManager.UnloadSceneAsync("Game");
+        SceneManager.UnloadSceneAsync(sceneToUnload);
         SceneManager.LoadSceneAsync("Menu", LoadSceneMode.Additive);
     }
     public void GameOver()
     {
         state = GameState.GameOver;
         SceneManager.UnloadSceneAsync("Game");
-        SceneManager.LoadSceneAsync("Game_Over");
+        SceneManager.LoadSceneAsync("Game_Over", LoadSceneMode.Additive);
+        isGameActive = false;
     }
     private void GameOverUpdate()
     {
         if (Input.GetButtonDown("Cancel") || Input.GetButtonDown("1"))
         {
-            ExitToMainMenu();
+            ExitToMainMenu("Game_Over");
         }
         else if (Input.GetButtonDown("2"))
         {
@@ -192,29 +262,29 @@ public class GameManager : MonoBehaviour
     public void PlayerDeath()
     {
         isGameActive = false;
-        GameOverManager.Instance.SetText(false);
+        AudioManager.PlaySound("Player Death Sound");
         Cheer(5, 1f);
         StartCoroutine(PlayerLose());
+        didWin = false;
     }
     private IEnumerator PlayerLose()
     {
         losses++;
         Save();
         yield return new WaitForSeconds(1.5f);
-        AudioManager.PlaySound("Battle End Sound");
+        AudioManager.PlaySound("Battle End Sound", hornPos);
         yield return new WaitForSeconds(1);
         StartCoroutine(FadeAudioListener(1, 0));
         yield return new WaitForSeconds(2);
-        isGameActive = false;
         GameOver();
+        //isGameActive = false;
         yield break;
     }
     public void EnemyDeath()
     {
-        GameOverManager.Instance.SetText(true);
         Cheer(7, 1f);
         StartCoroutine(PlayerWin());
-        //hurtSound.transform.position = playerController.transform.position + playerController.transform.forward * 2;
+        didWin = true;
     }
 
     private IEnumerator PlayerWin()
@@ -222,12 +292,12 @@ public class GameManager : MonoBehaviour
         wins++;
         Save();
         yield return new WaitForSeconds(1.5f);
-        AudioManager.PlaySound("Battle End Sound");
+        AudioManager.PlaySound("Battle End Sound", hornPos);
         yield return new WaitForSeconds(3.5f);
         StartCoroutine(FadeAudioListener(1, 0));
         yield return new WaitForSeconds(2);
-        isGameActive = false;
         GameOver();
+        isGameActive = false;
         yield break;
     }
     private IEnumerator FadeAudioListener(float duration, float targetVolume)

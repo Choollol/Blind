@@ -22,7 +22,7 @@ public class GameOverManager : MonoBehaviour
     }
     void Start()
     {
-        
+        SetText(GameManager.didWin);
     }
 
     void Update()

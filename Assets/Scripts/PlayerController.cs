@@ -18,9 +18,12 @@ public class PlayerController : MonoBehaviour
     private bool doAttack;
     private float healthOld;
 
+    private GameObject mainCamera;
+
     void Start()
     {
         StartCoroutine(Heartbeat());
+        mainCamera = GameObject.Find("Main Camera");
     }
 
     void Update()
@@ -36,11 +39,11 @@ public class PlayerController : MonoBehaviour
             if (health <= 0)
             {
                 GameManager.Instance.PlayerDeath();
-                AudioManager.PlaySound("Hurt Sound");
+                AudioManager.PlaySound("Hurt Sound", transform.position);
             }
             else if (health < healthOld)
             {
-                AudioManager.PlaySound("Hurt Sound");
+                AudioManager.PlaySound("Hurt Sound", transform.position);
             } 
             healthOld = health;
         }
@@ -50,11 +53,13 @@ public class PlayerController : MonoBehaviour
         if (Input.GetButtonDown("Turn Left"))
         {
             transform.Rotate(new Vector3(0, -90, 0));
+            mainCamera.transform.Rotate(new Vector3(0, -90, 0));
             AudioManager.PlaySound("Turn Sound");
         }
         else if (Input.GetButtonDown("Turn Right"))
         {
             transform.Rotate(new Vector3(0, 90, 0));
+            mainCamera.transform.Rotate(new Vector3(0, 90, 0));
             AudioManager.PlaySound("Turn Sound");
         }
     }

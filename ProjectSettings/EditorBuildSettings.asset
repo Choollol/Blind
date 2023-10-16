@@ -8,4 +8,22 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Main.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 1
+    path: Assets/Scenes/Menu.unity
+    guid: dd3e82efbe4440749abd41add0cc95a0
+  - enabled: 1
+    path: Assets/Scenes/Game.unity
+    guid: a3d35aead07c61c47bf9525a33ab99e7
+  - enabled: 1
+    path: Assets/Scenes/Paused.unity
+    guid: bec6b37b8cb17fc449cb2a5d018afb4d
+  - enabled: 1
+    path: Assets/Scenes/Game_Over.unity
+    guid: d5a060c2595d6734fa91378644bf9b42
+  - enabled: 1
+    path: Assets/Scenes/Difficulty_Select.unity
+    guid: 02715388c3f6747439f269fac31faa27
+  - enabled: 1
+    path: Assets/Scenes/Tutorial.unity
+    guid: 731bfacd3ae0ea94aad22f961cc5a715
   m_configObjects: {}

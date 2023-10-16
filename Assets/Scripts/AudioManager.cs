@@ -38,9 +38,10 @@ public class AudioManager : MonoBehaviour
         sounds[key].pitch = Random.Range(minPitch, maxPitch);
         sounds[key].Play();
     }
-    public static void PlaySound(string key, Vector3 pos)
+    public static void PlaySound(string key, Vector3 pos, float minPitch = 1, float maxPitch = 1)
     {
         sounds[key].transform.position = pos;
+        sounds[key].pitch = Random.Range(minPitch, maxPitch);
         sounds[key].Play();
     }
     public static void StopSound(string key)

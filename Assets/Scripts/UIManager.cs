@@ -58,7 +58,7 @@ public class UIManager : MonoBehaviour
         {
             if (uiDict[currentUI].transform.GetChild(i).gameObject.activeSelf)
             {
-                UAP_AccessibilityManager.Say(uiDict[currentUI].transform.GetChild(i).GetComponent<TextMeshProUGUI>().text, true);
+                UAP_AccessibilityManager.Say(uiDict[currentUI].transform.GetChild(i).GetComponent<TextMeshProUGUI>().text);
                 break;
             }
         }

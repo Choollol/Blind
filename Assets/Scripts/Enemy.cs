@@ -21,13 +21,10 @@ public class Enemy : MonoBehaviour
     public float damage;
     public float timeToHit;
     public float attackRecoveryTime;
-    public int health;
+    public float health;
     public float walkingSpeed;
     public float runningSpeed;
     public float footstepDistance;
-
-    public static bool canMove;
-    public static bool doDestroy;
 
     private PlayerController playerController;
 
@@ -40,6 +37,7 @@ public class Enemy : MonoBehaviour
     private int changeMovePhaseNum;
     private bool doIncrementChangeMovePhaseCounter;
     private float circleSpeed = 80;
+    private int footstepFilterCutoff = 7000;
     void Start()
     {
         playerController = GameObject.Find("Player").GetComponent<PlayerController>();
@@ -62,6 +60,21 @@ public class Enemy : MonoBehaviour
                 movementPhase = 0;
                 break;
         }
+        switch (GameManager.difficulty)
+        {
+            case GameManager.Difficulty.Easy:
+                {
+                    health /= 2;
+                    damage /= 2;
+                    break;
+                }
+            case GameManager.Difficulty.Hard:
+                {
+                    health *= 1.5f;
+                    damage *= 1.5f;
+                    break;
+                }
+        }
     }
 
     void Update()
@@ -69,17 +82,12 @@ public class Enemy : MonoBehaviour
         if (GameManager.isGameActive)
         {
             velocity = Vector3.zero;
-            
-            if (doDestroy)
-            {
-                Destroy(gameObject);
-            }
 
             if (playerController.isAttacking && playerController.IsFacingEnemy())// && health > 0)
             {
                 health -= playerController.damage;
                 playerController.isAttacking = false;
-                AudioManager.PlaySound("Hurt Sound");
+                AudioManager.PlaySound("Hurt Sound", transform.position);
                 GameManager.Instance.Cheer(3, 0.8f);
             }
             else if (health <= 0)
@@ -91,20 +99,17 @@ public class Enemy : MonoBehaviour
 
             FilterUpdate();
 
-            if (canMove)
+            switch (movementPhase)
             {
-                switch (movementPhase)
-                {
-                    case 0:
-                        MoveTowardPlayer();
-                        break;
-                    case 1:
-                        MoveAwayFromPlayer();
-                        break;
-                    case 2:
-                        CirclePlayer();
-                        break;
-                }
+                case 0:
+                    MoveTowardPlayer();
+                    break;
+                case 1:
+                    MoveAwayFromPlayer();
+                    break;
+                case 2:
+                    CirclePlayer();
+                    break;
             }
 
             FootstepUpdate();
@@ -119,16 +124,18 @@ public class Enemy : MonoBehaviour
 
         if (Vector3.Dot(toTarget, -playerController.transform.forward) > 0)
         {
-            AudioManager.GetSound("Footstep").GetComponent<AudioLowPassFilter>().cutoffFrequency = 5000;
+            AudioManager.GetSound("Footstep").GetComponent<AudioLowPassFilter>().cutoffFrequency = footstepFilterCutoff;
+            AudioManager.GetSound(weight + " Swing").GetComponent<AudioLowPassFilter>().cutoffFrequency = footstepFilterCutoff;
         }
         else
         {
             AudioManager.GetSound("Footstep").GetComponent<AudioLowPassFilter>().cutoffFrequency = 15000;
+            AudioManager.GetSound(weight + " Swing").GetComponent<AudioLowPassFilter>().cutoffFrequency = 15000;
         }
     }
     private void Attack()
     {
-        AudioManager.PlaySound("Swing");
+        AudioManager.PlaySound(weight + " Swing");
         StartCoroutine(HitPlayer());
         isAttacking = true;
     }
@@ -140,7 +147,7 @@ public class Enemy : MonoBehaviour
             AudioManager.PlaySound("Blocked Sound");
             if (weight == Weight.Heavy)
             {
-                playerController.health -= 1.5f;
+                playerController.health -= damage / 3;
                 GameManager.Instance.Cheer(2, 0.5f);
             }
         }
@@ -158,7 +165,7 @@ public class Enemy : MonoBehaviour
         if (Vector3.Distance(transform.position, footstepPosOld) > footstepDistance || (velocityOld == Vector3.zero && velocity != Vector3.zero))
         {
             footstepPosOld = transform.position;
-            AudioManager.PlaySound("Footstep", 0.8f, 1f);
+            AudioManager.PlaySound("Footstep", transform.position, 0.8f, 1f);
         }
     }
     private void MoveTowardPlayer()
